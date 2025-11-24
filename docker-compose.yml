@@ -1,39 +1,87 @@
 version: '3.8'
 
 services:
+  # Main RAG Application
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: rag_app
     ports:
-      - "8501:8501" # Streamlit
-      - "8000:8000" # FastAPI (if needed separately)
+      - "8501:8501" # Streamlit UI
     environment:
       - QDRANT_URL=http://qdrant:6333
       - REDIS_URL=redis://redis:6379
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434 # Access host's Ollama
-      - SERPER_API_KEY=${SERPER_API_KEY}
-    extra_hosts:
-      - "host.docker.internal:host-gateway" # Allow container to reach host
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      - SERPER_API_KEY=${SERPER_API_KEY:-}
+    env_file:
+      - .env
     volumes:
-      - .:/app
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./evaluation_reports:/app/evaluation_reports
     depends_on:
-      - qdrant
-      - redis
-    command: streamlit run src/ui/app.py --server.port 8501 --server.address 0.0.0.0
+      qdrant:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - rag_network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8501/_stcore/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
+  # Qdrant Vector Database
   qdrant:
     image: qdrant/qdrant:latest
     container_name: rag_qdrant
     ports:
-      - "6333:6333"
+      - "6333:6333" # HTTP API
+      - "6334:6334" # gRPC API
     volumes:
       - qdrant_data:/qdrant/storage
+    networks:
+      - rag_network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:6333/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
+  # Redis Cache
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
     container_name: rag_redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - rag_network
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
+# Volumes for data persistence
 volumes:
   qdrant_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# Network for inter-service communication
+networks:
+  rag_network:
+    driver: bridge
