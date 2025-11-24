@@ -8,11 +8,11 @@ from typing import Any, Dict
 class SimpleLLM(RunnableSerializable):
     """Simple wrapper for Google Gemini that works with LangChain."""
     
-    model_name: str = "gemini-pro"
+    model_name: str = "gemini-1.5-flash"
     temperature: float = 0.0
     _model: Any = None
     
-    def __init__(self, model_name: str = "gemini-pro", temperature: float = 0.0, **kwargs):
+    def __init__(self, model_name: str = "gemini-1.5-flash", temperature: float = 0.0, **kwargs):
         super().__init__(model_name=model_name, temperature=temperature, **kwargs)
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
@@ -36,7 +36,7 @@ class SimpleLLM(RunnableSerializable):
         return response.text
 
 class LLMClient:
-    def __init__(self, model_name: str = "gemini-pro", temperature: float = 0.0):
+    def __init__(self, model_name: str = "gemini-1.5-flash", temperature: float = 0.0):
         self.llm = SimpleLLM(model_name=model_name, temperature=temperature)
 
 class AnswerGenerator:

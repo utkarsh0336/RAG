@@ -1,7 +1,7 @@
 import os
 from typing import List, Dict, Any
 from qdrant_client import QdrantClient
-from sentence_transformers import SentenceTransformer, CrossEncoder
+from sentence_transformers import SentenceTransformer
 from langchain_core.documents import Document
 
 class HybridRetriever:
@@ -14,11 +14,11 @@ class HybridRetriever:
             self.client = None
             
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
-        # Using a smaller cross-encoder for speed in this demo, but BAAI/bge-reranker-base is better
-        self.reranker = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
+        # CrossEncoder disabled due to PyTorch compatibility issues
+        self.reranker = None
 
     def search(self, query: str, k: int = 10) -> List[Document]:
-        """Performs hybrid search (Dense + Re-ranking)."""
+        """Performs vector search (re-ranking temporarily disabled)."""
         if not self.client:
             print("Qdrant client not initialized.")
             return []
@@ -26,13 +26,13 @@ class HybridRetriever:
         query_vector = self.model.encode(query).tolist()
         
         try:
-            # 1. Retrieve top 2*k candidates using dense vector search
+            # Retrieve top k candidates using dense vector search
             from qdrant_client.models import PointStruct, VectorParams, Distance
             
             results = self.client.query_points(
                 collection_name=self.collection_name,
                 query=query_vector,
-                limit=k * 2
+                limit=k
             ).points
         except Exception as e:
             print(f"Search failed: {e}")
@@ -41,24 +41,16 @@ class HybridRetriever:
         if not results:
             return []
             
-        # 2. Re-rank results
+        # Convert to documents
         documents = []
-        passages = []
         for res in results:
             text = res.payload.get("text", "")
-            passages.append([query, text])
             documents.append(Document(
                 page_content=text,
                 metadata=res.payload
             ))
-            
-        scores = self.reranker.predict(passages)
         
-        # Sort by re-ranking score
-        ranked_results = sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)
-        
-        # Return top k
-        return [doc for doc, score in ranked_results[:k]]
+        return documents
 
 class MultiSourceRetriever:
     def __init__(self):
