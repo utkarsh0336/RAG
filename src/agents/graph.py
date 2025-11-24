@@ -24,11 +24,12 @@ class RAGGraph:
         self.executor = ExecutionAgent()
         self.synthesizer = SynthesisAgent()
         
-        # Initialize cache
+        # Initialize cache (optional - system works without it)
         try:
             self.cache = RedisCache()
+            print("✅ Redis cache enabled")
         except Exception as e:
-            print(f"Redis cache not available: {e}")
+            print(f"ℹ️  Redis cache disabled (system will work without caching): {e}")
             self.cache = None
         
         self.workflow = StateGraph(GraphState)

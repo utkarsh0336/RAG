@@ -30,7 +30,7 @@ class RedisCache:
             if cached:
                 return cached.decode('utf-8')
         except Exception as e:
-            print(f"Cache get error: {e}")
+            pass  # Silently fail
         return None
     
     def set_answer(self, query: str, answer: str, ttl: Optional[int] = None):
@@ -40,7 +40,7 @@ class RedisCache:
         try:
             self.client.setex(key, ttl, answer.encode('utf-8'))
         except Exception as e:
-            print(f"Cache set error: {e}")
+            pass  # Silently fail - caching is optional
     
     def set_web_answer(self, query: str, answer: str):
         """Cache answer with web-sourced data (shorter TTL for freshness)."""
@@ -56,7 +56,7 @@ class RedisCache:
             if cached:
                 return pickle.loads(cached)
         except Exception as e:
-            print(f"Vector cache get error: {e}")
+            pass  # Silently fail
         return None
     
     def set_vector(self, text: str, vector: List[float]):
@@ -65,7 +65,7 @@ class RedisCache:
         try:
             self.client.setex(key, self.VECTOR_TTL, pickle.dumps(vector))
         except Exception as e:
-            print(f"Vector cache set error: {e}")
+            pass  # Silently fail
     
     def get_batch_vectors(self, texts: List[str]) -> List[Optional[List[float]]]:
         """Get multiple cached vectors at once."""
@@ -74,7 +74,7 @@ class RedisCache:
             cached = self.client.mget(keys)
             return [pickle.loads(v) if v else None for v in cached]
         except Exception as e:
-            print(f"Batch vector cache error: {e}")
+            pass  # Silently fail
             return [None] * len(texts)
     
     def set_batch_vectors(self, texts: List[str], vectors: List[List[float]]):
@@ -86,7 +86,7 @@ class RedisCache:
                 pipe.setex(key, self.VECTOR_TTL, pickle.dumps(vector))
             pipe.execute()
         except Exception as e:
-            print(f"Batch vector cache set error: {e}")
+            pass  # Silently fail
     
     # ----- Cache Management -----
     
@@ -96,14 +96,14 @@ class RedisCache:
             for key in self.client.scan_iter(match=pattern):
                 self.client.delete(key)
         except Exception as e:
-            print(f"Cache invalidation error: {e}")
+            pass  # Silently fail
     
     def clear_all(self):
         """Clear entire cache (use with caution)."""
         try:
             self.client.flushdb()
         except Exception as e:
-            print(f"Cache clear error: {e}")
+            pass  # Silently fail
     
     def get_stats(self) -> dict:
         """Get cache statistics."""
@@ -116,5 +116,5 @@ class RedisCache:
                 'hit_rate': info.get('keyspace_hits', 0) / max(info.get('keyspace_hits', 0) + info.get('keyspace_misses', 1), 1)
             }
         except Exception as e:
-            print(f"Stats error: {e}")
+            pass  # Silently fail
             return {}

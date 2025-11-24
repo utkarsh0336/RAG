@@ -111,8 +111,17 @@ if st.button("🚀 Run Query", type="primary"):
                                     st.write(f"**Source:** {step.get('source')}")
                                     st.write(f"**Documents Retrieved:** {step.get('num_results')}")
                                     if show_logs:
-                                        for i, doc in enumerate(step.get('results', [])[:3]):
-                                            st.markdown(f"**Doc {i+1}:** {doc.get('text', '')[:150]}...")
+                                        results = step.get('results', [])
+                                        # Ensure results is a list before slicing
+                                        if isinstance(results, dict):
+                                            results = list(results.values())
+                                        elif not isinstance(results, list):
+                                            results = []
+                                        for i, doc in enumerate(results[:3]):
+                                            if isinstance(doc, dict):
+                                                st.markdown(f"**Doc {i+1}:** {doc.get('text', '')[:150]}...")
+                                            else:
+                                                st.markdown(f"**Doc {i+1}:** {str(doc)[:150]}...")
                             
                             elif step_type == "generation":
                                 with st.expander("✍️ **Step 2: Initial Generation**", expanded=True):

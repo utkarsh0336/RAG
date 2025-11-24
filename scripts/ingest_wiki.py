@@ -26,7 +26,7 @@ def get_wiki_content(title):
 
 def ingest_wiki():
     print("Initializing Qdrant and Model...")
-    qdrant = QdrantHandler()
+    qdrant = QdrantHandler(path="./qdrant_data")
     qdrant.create_collection(COLLECTION_NAME, vector_size=384)
     
     model = SentenceTransformer('all-MiniLM-L6-v2')
