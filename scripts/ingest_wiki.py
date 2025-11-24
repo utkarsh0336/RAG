@@ -7,7 +7,6 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from sentence_transformers import SentenceTransformer
-from fastembed import SparseTextEmbedding
 from src.rag.qdrant_handler import QdrantHandler
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -27,12 +26,10 @@ def get_wiki_content(title):
 
 def ingest_wiki():
     print("Initializing Qdrant and Model...")
-    # Use local persistence for reliability if Docker is down
-    qdrant = QdrantHandler(path="./qdrant_data")
+    qdrant = QdrantHandler()
     qdrant.create_collection(COLLECTION_NAME, vector_size=384)
     
     model = SentenceTransformer('all-MiniLM-L6-v2')
-    sparse_model = SparseTextEmbedding(model_name="prithivida/Splade_PP_en_v1")
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
 
     visited = set()
@@ -69,10 +66,6 @@ def ingest_wiki():
     print(f"Embedding {len(documents)} chunks...")
     embeddings = model.encode(documents).tolist()
     
-    print("Generating sparse embeddings...")
-    # fastembed returns a generator, convert to list
-    sparse_embeddings = list(sparse_model.embed(documents))
-    
     print("Uploading to Qdrant...")
     # Upload in batches of 100
     batch_size = 100
@@ -82,8 +75,7 @@ def ingest_wiki():
             COLLECTION_NAME,
             documents[i:end],
             metadatas[i:end],
-            embeddings[i:end],
-            sparse_embeddings[i:end]
+            embeddings[i:end]
         )
     
     print("Ingestion complete!")
