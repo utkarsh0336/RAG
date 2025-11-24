@@ -49,8 +49,10 @@ htmlcov/
 *.db
 *.sqlite3
 
-# Logs
+# Logs and Reports
 *.log
+logs/
+evaluation_reports/
 
 # OS
 .DS_Store

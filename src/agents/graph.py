@@ -5,6 +5,8 @@ from src.rag.generation import AnswerGenerator
 from src.agents.validation import ValidationAgent, ValidationReport
 from src.agents.execution import ExecutionAgent
 from src.agents.synthesis import SynthesisAgent
+from src.cache import RedisCache
+from src.observability import get_tracker
 
 class GraphState(TypedDict):
     question: str
@@ -21,6 +23,13 @@ class RAGGraph:
         self.validator = ValidationAgent()
         self.executor = ExecutionAgent()
         self.synthesizer = SynthesisAgent()
+        
+        # Initialize cache
+        try:
+            self.cache = RedisCache()
+        except Exception as e:
+            print(f"Redis cache not available: {e}")
+            self.cache = None
         
         self.workflow = StateGraph(GraphState)
         
@@ -55,11 +64,22 @@ class RAGGraph:
         print("---RETRIEVE---")
         docs = self.retriever.retrieve(state["question"])
         context = "\n\n".join([d.page_content for d in docs])
+        
+        # Log retrieval
+        tracker = get_tracker()
+        tracker.log_retrieval("multi_source", state["question"], 
+                            [{"page_content": d.page_content, "metadata": d.metadata} for d in docs])
+        
         return {"context": context}
     
     def generate_node(self, state: GraphState):
         print("---GENERATE---")
         answer = self.generator.generate(state["question"], state["context"])
+        
+        # Log generation
+        tracker = get_tracker()
+        tracker.log_generation(answer)
+        
         return {"initial_answer": answer}
     
     def validate_node(self, state: GraphState):
@@ -68,6 +88,10 @@ class RAGGraph:
         # Ensure report is dict
         if hasattr(report, "dict"):
             report = report.dict()
+        
+        # Log validation
+        tracker = get_tracker()
+        tracker.log_validation(report)
         
         # Set final_answer here if validation passes (will be used by conditional logic)
         result = {"validation_report": report}
@@ -110,8 +134,48 @@ class RAGGraph:
             str(state["validation_report"]),
             state["new_info"]
         )
+        
+        # Log synthesis
+        tracker = get_tracker()
+        sources = []
+        if state.get("context"): sources.append("VectorDB")
+        if state.get("new_info"): sources.append("Web/ArXiv/SQL")
+        tracker.log_synthesis(final, sources)
+        
         return {"final_answer": final}
         
     def run(self, question: str):
-        inputs = {"question": question}
-        return self.app.invoke(inputs)
+        # Start tracking
+        tracker = get_tracker()
+        run_id = tracker.start_run(question)
+        
+        try:
+            # Check Tier 1 cache for exact query match
+            if self.cache:
+                cached_answer = self.cache.get_answer(question)
+                if cached_answer:
+                    print(f"Cache hit: answer for '{question[:30]}...'")
+                    tracker.log_cache_hit(cached_answer)
+                    tracker.end_run()
+                    return {"final_answer": cached_answer, "question": question}
+            
+            # Execute the graph
+            inputs = {"question": question}
+            result = self.app.invoke(inputs)
+            
+            # Cache the final answer (Tier 1)
+            if self.cache and "final_answer" in result:
+                # Use shorter TTL if answer includes web-sourced info
+                has_web_info = "new_info" in result and result.get("new_info")
+                if has_web_info:
+                    self.cache.set_web_answer(question, result["final_answer"])
+                else:
+                    self.cache.set_answer(question, result["final_answer"])
+            
+            # End tracking and save log
+            tracker.end_run()
+            
+            return result
+        except Exception as e:
+            tracker.end_run()
+            raise e
