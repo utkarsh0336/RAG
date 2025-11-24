@@ -1,4 +1,10 @@
 import arxiv
+import sys
+import os
+
+# Add project root to path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from sentence_transformers import SentenceTransformer
 from src.rag.qdrant_handler import QdrantHandler
 from langchain_text_splitters import RecursiveCharacterTextSplitter

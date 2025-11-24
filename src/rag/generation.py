@@ -4,7 +4,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 class LLMClient:
-    def __init__(self, model_name: str = "llama3", temperature: float = 0.0):
+    def __init__(self, model_name: str = "llama3.2:1b", temperature: float = 0.0):
         # Connect to local Ollama instance
         # Default to localhost since we're running outside Docker
         base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
