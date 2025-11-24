@@ -1,0 +1,12 @@
+Question: What is the capital of USA?
+
+Initial Answer:
+The provided text does not contain information about the capital of the USA.
+
+
+Validation:
+{'is_complete': True, 'is_outdated': False, 'gaps': [], 'inconsistencies': [], 'search_queries': ['capital of USA'], 'reasoning': 'The provided text does not contain any information about the capital of the USA. Therefore, the answer that the context does not contain that information is accurate. However, to be useful the agent should suggest a search query to find the information.', 'score': 1.0}
+
+Final Answer:
+The provided text does not contain information about the capital of the USA.
+

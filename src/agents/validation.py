@@ -6,9 +6,11 @@ from src.rag.generation import LLMClient
 
 class ValidationReport(BaseModel):
     is_complete: bool = Field(description="True if the answer is complete and accurate based on context, False otherwise.")
+    is_outdated: bool = Field(description="True if the information is likely outdated or if the query requires more recent data than available.")
     gaps: List[str] = Field(description="List of specific information gaps or missing details.")
     inconsistencies: List[str] = Field(description="List of factual inconsistencies found.")
     search_queries: List[str] = Field(description="List of specific search queries to fill the gaps.")
+    reasoning: str = Field(description="Explanation of the validation assessment.")
     score: float = Field(description="Confidence score between 0.0 and 1.0.")
 
 class ValidationAgent:
@@ -24,9 +26,13 @@ class ValidationAgent:
         2. Retrieved Context: {context}
         3. Generated Answer: {answer}
         
-        Determine if the answer is fully supported by the context and completely answers the user's question.
-        Identify any hallucinations, missing information, or outdated data.
-        If there are gaps, generate specific search queries to find that information.
+        Your tasks:
+        1. Determine if the answer is fully supported by the context.
+        2. Check if the information is likely OUTDATED (e.g., asking for "current" officials, latest statistics, or recent events).
+        3. Identify any factual inconsistencies or hallucinations.
+        4. Identify specific GAPS that need to be filled to provide a complete answer.
+        
+        If the answer is outdated or incomplete, generate specific search queries to find the missing or current information.
         
         {format_instructions}
         """)
@@ -46,8 +52,10 @@ class ValidationAgent:
             # Fallback for safety
             return {
                 "is_complete": False,
+                "is_outdated": False,
                 "gaps": ["Validation failed"],
                 "inconsistencies": [],
                 "search_queries": [question],
+                "reasoning": "Validation process failed.",
                 "score": 0.0
             }

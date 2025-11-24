@@ -68,14 +68,29 @@ class RAGGraph:
         # Ensure report is dict
         if hasattr(report, "dict"):
             report = report.dict()
-        return {"validation_report": report}
+        
+        # Set final_answer here if validation passes (will be used by conditional logic)
+        result = {"validation_report": report}
+        
+        # If answer is complete and not outdated, set final_answer now
+        if (report.get("is_complete", False) and 
+            not report.get("is_outdated", False) and 
+            report.get("score", 0) > 0.8):
+            result["final_answer"] = state["initial_answer"]
+            
+        return result
     
     def check_validation(self, state: GraphState):
         print("---CHECK VALIDATION---")
         report = state["validation_report"]
+        
+        # If outdated, force execution regardless of score
+        if report.get("is_outdated", False):
+            print("Answer is outdated. Fetching new info...")
+            return "needs_work"
+            
         if report.get("is_complete", False) and report.get("score", 0) > 0.8:
-            # If good enough, just set final answer to initial answer
-            state["final_answer"] = state["initial_answer"]
+            # final_answer already set in validate_node
             return "accepted"
         return "needs_work"
     

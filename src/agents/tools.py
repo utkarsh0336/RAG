@@ -5,13 +5,15 @@ from typing import List, Dict
 from langchain_core.tools import tool
 from langchain_community.utilities import GoogleSerperAPIWrapper
 from langchain_community.tools import TavilySearchResults
+from duckduckgo_search import DDGS
+from langdetect import detect, LangDetectException
 
 # Web Search Tool
 @tool
 def web_search_tool(query: str) -> str:
     """Performs a web search to find recent information."""
     try:
-        # Prefer Tavily if available, else Serper
+        # Prefer Tavily if available, else Serper, else DuckDuckGo (Free)
         if os.getenv("TAVILY_API_KEY"):
             tool = TavilySearchResults(max_results=3)
             results = tool.invoke({"query": query})
@@ -20,7 +22,34 @@ def web_search_tool(query: str) -> str:
             search = GoogleSerperAPIWrapper()
             return search.run(query)
         else:
-            return "No search API key provided (TAVILY_API_KEY or SERPER_API_KEY)."
+            # Fallback to free DuckDuckGo search using direct library with retry logic
+            with DDGS() as ddgs:
+                for backend in ["html", "lite", "api"]:
+                    try:
+                        results = list(ddgs.text(query, max_results=10, backend=backend))
+                        if results:
+                            # Filter for English-only results
+                            english_results = []
+                            for r in results:
+                                try:
+                                    # Check if title or body is in English
+                                    text = r.get('title', '') + ' ' + r.get('body', '')
+                                    if detect(text) == 'en':
+                                        english_results.append(r)
+                                        if len(english_results) >= 3:
+                                            break
+                                except LangDetectException:
+                                    # If detection fails, include it anyway
+                                    english_results.append(r)
+                                    if len(english_results) >= 3:
+                                        break
+                            
+                            if english_results:
+                                return str(english_results)
+                    except Exception:
+                        continue
+                
+                return "No results found."
     except Exception as e:
         return f"Search failed: {e}"
 

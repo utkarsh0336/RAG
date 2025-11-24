@@ -44,14 +44,39 @@ if st.button("Run Query"):
                 # Display trace
                 st.subheader("🔍 Chain of Thought")
                 with st.expander("View processing steps", expanded=False):
-                    for step in result.get("trace", []):
-                        st.markdown(f"**{step['node']}**")
-                        st.text(step['output'][:500] + "..." if len(step['output']) > 500 else step['output'])
+                    if "validation_report" in result:
+                        st.markdown("**Validation Report:**")
+                        report = result["validation_report"]
+                        st.json({
+                            "Complete": report.get("is_complete"),
+                            "Outdated": report.get("is_outdated"),
+                            "Score": report.get("score"),
+                            "Gaps": report.get("gaps"),
+                            "Reasoning": report.get("reasoning")
+                        })
                         st.markdown("---")
                 
-                # Display final answer
+                # Display final answer with streaming effect
                 st.subheader("✨ Final Answer")
-                st.success(result.get("final_answer", "No answer generated"))
+                final_answer = result.get("final_answer", "No answer generated")
+                
+                if final_answer != "No answer generated":
+                    # Stream the answer word by word for better UX
+                    answer_placeholder = st.empty()
+                    words = final_answer.split()
+                    displayed_text = ""
+                    
+                    for i, word in enumerate(words):
+                        displayed_text += word + " "
+                        answer_placeholder.success(displayed_text)
+                        # Small delay for streaming effect
+                        if i % 5 == 0:  # Update every 5 words to balance speed and smoothness
+                            import time
+                            time.sleep(0.05)
+                    
+                    answer_placeholder.success(final_answer)
+                else:
+                    st.error(final_answer)
                 
             except Exception as e:
                 st.error(f"An error occurred: {e}")

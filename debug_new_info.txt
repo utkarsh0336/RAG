@@ -1,0 +1,5 @@
+Web Search for 'What is the latest iPhone model?':
+No results found.
+
+Web Search for 'current iPhone models':
+[{'title': 'Current | Future of Banking', 'href': 'https://current.com/', 'body': 'Eligibility requires at least one Eligible Payroll Deposit of $200 or more into your Current Account over the preceding 35-day period and other requirements at Current’s discretion.'}, {'title': 'Current x MrBeast', 'href': 'https://current.com/beast/', 'body': 'With Current, you can qualify for a paycheck advance, get paid faster, overdraft fee-free, & build credit. Current is a fintech not a bank. Banking services provided by Choice Financial Group, …'}, {'title': 'Current - Banking for Modern Life', 'href': 'https://current.com/about-us/', 'body': "No matter what your title or how long you've worked here, at Current everyone is integral to making our mission possible. Here, no task is beneath us. We keep an open mind, because …"}]
