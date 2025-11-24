@@ -45,8 +45,10 @@ class AnswerGenerator:
         self.llm = self.llm_client.llm
         
         self.prompt = ChatPromptTemplate.from_template("""
-        You are an expert AI assistant. Answer the user's question based ONLY on the provided context.
-        If the context does not contain enough information to answer the question fully, state what is missing.
+        You are an expert AI assistant. Answer the user's question based on the provided context.
+        If the context does not contain enough information to answer the question fully, state what information is available and what is missing.
+        
+        Provide a clear, natural answer without citations or source references.
         
         Context:
         {context}

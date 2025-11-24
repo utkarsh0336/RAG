@@ -41,42 +41,25 @@ if st.button("Run Query"):
             try:
                 result = st.session_state.graph.run(question)
                 
-                # Display trace
-                st.subheader("🔍 Chain of Thought")
-                with st.expander("View processing steps", expanded=False):
-                    if "validation_report" in result:
-                        st.markdown("**Validation Report:**")
-                        report = result["validation_report"]
-                        st.json({
-                            "Complete": report.get("is_complete"),
-                            "Outdated": report.get("is_outdated"),
-                            "Score": report.get("score"),
-                            "Gaps": report.get("gaps"),
-                            "Reasoning": report.get("reasoning")
-                        })
-                        st.markdown("---")
-                
-                # Display final answer with streaming effect
-                st.subheader("✨ Final Answer")
+                # Display final answer with ChatGPT-style streaming
+                st.subheader("✨ Answer")
                 final_answer = result.get("final_answer", "No answer generated")
                 
                 if final_answer != "No answer generated":
-                    # Stream the answer word by word for better UX
+                    # Stream the answer character by character for ChatGPT-like UX
                     answer_placeholder = st.empty()
-                    words = final_answer.split()
                     displayed_text = ""
                     
-                    for i, word in enumerate(words):
-                        displayed_text += word + " "
-                        answer_placeholder.success(displayed_text)
-                        # Small delay for streaming effect
-                        if i % 5 == 0:  # Update every 5 words to balance speed and smoothness
-                            import time
-                            time.sleep(0.05)
+                    import time
+                    for char in final_answer:
+                        displayed_text += char
+                        answer_placeholder.markdown(displayed_text + "▌")  # Blinking cursor effect
+                        time.sleep(0.01)  # Small delay for smooth streaming
                     
-                    answer_placeholder.success(final_answer)
+                    # Final display without cursor
+                    answer_placeholder.markdown(final_answer)
                 else:
-                    st.error(final_answer)
+                    st.error("I couldn't generate an answer. Please try rephrasing your question.")
                 
             except Exception as e:
                 st.error(f"An error occurred: {e}")

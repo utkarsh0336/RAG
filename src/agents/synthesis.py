@@ -21,7 +21,8 @@ class SynthesisAgent:
         1. Synthesize a FINAL, comprehensive answer that addresses the original question.
         2. Incorporate the new information to fix the gaps/inconsistencies identified.
         3. Resolve any conflicts between sources (prioritize recent web/paper info over old data).
-        4. Provide CITATIONS for every key claim. Format: [Source: URL/Title].
+        4. Provide a clean, natural response WITHOUT citations or source references.
+        5. Write in a conversational, helpful tone like a knowledgeable assistant.
         
         Final Answer:
         """)
