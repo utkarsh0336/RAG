@@ -2,6 +2,7 @@ import os
 from typing import List, Dict, Any
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer, CrossEncoder
+from fastembed import SparseTextEmbedding
 from langchain_core.documents import Document
 from src.cache import RedisCache
 
@@ -9,14 +10,22 @@ class HybridRetriever:
     def __init__(self, collection_name: str):
         self.collection_name = collection_name
         qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
+        qdrant_path = os.getenv("QDRANT_PATH")
         
         try:
-            self.client = QdrantClient(url=qdrant_url)
+            if qdrant_path:
+                self.client = QdrantClient(path=qdrant_path)
+            elif qdrant_url == ":memory:":
+                self.client = QdrantClient(location=":memory:")
+            else:
+                self.client = QdrantClient(url=qdrant_url)
         except Exception as e:
             print(f"Failed to connect to Qdrant: {e}")
             self.client = None
             
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        # Initialize sparse model
+        self.sparse_model = SparseTextEmbedding(model_name="prithivida/Splade_PP_en_v1")
         # Re-enable CrossEncoder for better re-ranking
         self.reranker = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
         
@@ -47,12 +56,29 @@ class HybridRetriever:
                 self.cache.set_vector(query, query_vector)
         
         try:
-            # 1. Retrieve top 2*k candidates using dense vector search
-            from qdrant_client.models import PointStruct, VectorParams, Distance
+            # 1. Retrieve top 2*k candidates using hybrid search
+            # 1. Retrieve top 2*k candidates using hybrid search
+            from qdrant_client.models import PointStruct, VectorParams, Distance, Prefetch, SparseVector
             
+            # Generate sparse vector
+            # fastembed returns a generator of SparseEmbedding (indices, values)
+            sparse_embedding = list(self.sparse_model.embed(query))[0]
+            
+            # Hybrid search with prefetch
             results = self.client.query_points(
                 collection_name=self.collection_name,
+                prefetch=[
+                    Prefetch(
+                        query=SparseVector(
+                            indices=sparse_embedding.indices.tolist(),
+                            values=sparse_embedding.values.tolist()
+                        ),
+                        using="sparse",
+                        limit=k * 2
+                    )
+                ],
                 query=query_vector,
+                using="dense",
                 limit=k * 2  # Retrieve more candidates for re-ranking
             ).points
         except Exception as e:

@@ -14,8 +14,8 @@ class ValidationReport(BaseModel):
     score: float = Field(description="Confidence score between 0.0 and 1.0.")
 
 class ValidationAgent:
-    def __init__(self):
-        self.llm = LLMClient(temperature=0.3).llm
+    def __init__(self, provider: str = "opensource"):
+        self.llm = LLMClient(provider=provider, temperature=0.1).llm # Low temp for strict validation
         self.parser = JsonOutputParser(pydantic_object=ValidationReport)
         
         self.prompt = ChatPromptTemplate.from_template("""

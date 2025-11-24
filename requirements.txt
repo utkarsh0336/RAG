@@ -21,3 +21,5 @@ langgraph
 tavily-python
 google-search-results
 altair<5
+fastembed
+huggingface_hub
