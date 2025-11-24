@@ -15,7 +15,7 @@ class ValidationReport(BaseModel):
 
 class ValidationAgent:
     def __init__(self):
-        self.llm = LLMClient(temperature=0.0).llm
+        self.llm = LLMClient(temperature=0.3).llm
         self.parser = JsonOutputParser(pydantic_object=ValidationReport)
         
         self.prompt = ChatPromptTemplate.from_template("""

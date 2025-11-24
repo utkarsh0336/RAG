@@ -37,26 +37,24 @@ question = st.text_input("Ask a question:", "What are transformers in AI and how
 
 if st.button("Run Query"):
     if question:
-        with st.spinner("Processing your question..."):
+        with st.spinner("Thinking..."):
             try:
                 result = st.session_state.graph.run(question)
                 
-                # Display final answer with ChatGPT-style streaming
-                st.subheader("✨ Answer")
+                # Display only final answer with streaming
                 final_answer = result.get("final_answer", "No answer generated")
                 
                 if final_answer != "No answer generated":
-                    # Stream the answer character by character for ChatGPT-like UX
+                    # Stream the answer character by character
                     answer_placeholder = st.empty()
                     displayed_text = ""
                     
                     import time
                     for char in final_answer:
                         displayed_text += char
-                        answer_placeholder.markdown(displayed_text + "▌")  # Blinking cursor effect
-                        time.sleep(0.01)  # Small delay for smooth streaming
+                        answer_placeholder.markdown(displayed_text + "▌")
+                        time.sleep(0.01)
                     
-                    # Final display without cursor
                     answer_placeholder.markdown(final_answer)
                 else:
                     st.error("I couldn't generate an answer. Please try rephrasing your question.")

@@ -4,7 +4,7 @@ from src.rag.generation import LLMClient
 
 class SynthesisAgent:
     def __init__(self):
-        self.llm = LLMClient().llm
+        self.llm = LLMClient(temperature=0.7).llm
         
         self.prompt = ChatPromptTemplate.from_template("""
         You are the final synthesizer in a RAG pipeline.
