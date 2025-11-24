@@ -5,7 +5,7 @@ from src.agents.tools import web_search_tool, sql_query_tool, arxiv_search_tool
 
 class ExecutionAgent:
     def __init__(self):
-        self.llm = LLMClient(model_name="llama3.2:1b").llm 
+        self.llm = LLMClient(model_name="gemini-pro").llm 
         self.tools = {
             "web_search": web_search_tool,
             "sql_query": sql_query_tool,

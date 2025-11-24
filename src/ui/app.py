@@ -1,57 +1,59 @@
-import torch
-import streamlit as st
 import os
 import sys
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Add the project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
+import streamlit as st
 from src.agents.graph import RAGGraph
 
 st.set_page_config(page_title="Self-Correcting RAG", layout="wide")
 
-st.title("Self-Correcting RAG System")
+st.title("🤖 Self-Correcting RAG System")
 st.markdown("""
-This system uses an agentic workflow to answer complex questions.
-1. **Retrieve**: Fetches data from VectorDB.
-2. **Generate**: Drafts an initial answer.
-3. **Validate**: Critiques the answer for gaps/hallucinations.
-4. **Execute**: autonomously gathers missing info (Web/SQL/ArXiv).
-5. **Synthesize**: Combines everything into a final verified answer.
+This system uses a multi-agent approach to answer complex questions by:
+1. Retrieving relevant information from Wikipedia and ArXiv
+2. Generating an initial answer
+3. Self-critiquing and identifying gaps
+4. Gathering additional information
+5. Synthesizing a comprehensive final answer
 """)
 
-# Initialize Graph
+# Initialize the RAG graph
 if "graph" not in st.session_state:
-    st.session_state.graph = RAGGraph()
+    try:
+        st.session_state.graph = RAGGraph()
+        st.success("✅ System initialized successfully!")
+    except Exception as e:
+        st.error(f"❌ Failed to initialize: {e}")
+        st.stop()
 
-question = st.text_input("Ask a complex question:", "What are the parameter counts of Llama 2 and GPT-4, and how do they compare in architecture?")
+# User input
+question = st.text_input("Ask a question:", "What are transformers in AI and how do they work?")
 
 if st.button("Run Query"):
-    with st.spinner("Running Agentic Workflow..."):
-        try:
-            # Run the graph
-            final_state = st.session_state.graph.run(question)
-            
-            # Display Results
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.subheader("Trace")
-                with st.expander("1. Retrieval", expanded=False):
-                    st.write(final_state.get("context", "No context retrieved"))
-                    
-                with st.expander("2. Initial Answer", expanded=False):
-                    st.write(final_state.get("initial_answer", "No initial answer"))
-                    
-                with st.expander("3. Validation Report", expanded=True):
-                    st.json(final_state.get("validation_report", {}))
-                    
-                with st.expander("4. Execution (New Info)", expanded=True):
-                    st.write(final_state.get("new_info", "No new info gathered"))
-            
-            with col2:
-                st.subheader("Final Answer")
-                st.success(final_state.get("final_answer", "Processing failed"))
+    if question:
+        with st.spinner("Processing your question..."):
+            try:
+                result = st.session_state.graph.run(question)
                 
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
+                # Display trace
+                st.subheader("🔍 Chain of Thought")
+                with st.expander("View processing steps", expanded=False):
+                    for step in result.get("trace", []):
+                        st.markdown(f"**{step['node']}**")
+                        st.text(step['output'][:500] + "..." if len(step['output']) > 500 else step['output'])
+                        st.markdown("---")
+                
+                # Display final answer
+                st.subheader("✨ Final Answer")
+                st.success(result.get("final_answer", "No answer generated"))
+                
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
+    else:
+        st.warning("Please enter a question")
