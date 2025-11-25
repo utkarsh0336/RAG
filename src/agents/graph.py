@@ -77,11 +77,14 @@ class RAGGraph:
         print("---GENERATE---")
         answer = self.generator.generate(state["question"], state["context"])
         
+        # Extract answer and confidence from the dictionary
+        answer_text = answer.get("answer", "No answer generated.")
+        
         # Log generation
         tracker = get_tracker()
-        tracker.log_generation(answer)
+        tracker.log_generation(answer_text)
         
-        return {"initial_answer": answer}
+        return {"initial_answer": answer_text}
     
     def validate_node(self, state: GraphState):
         print("---VALIDATE---")

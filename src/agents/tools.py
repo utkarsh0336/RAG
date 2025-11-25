@@ -24,9 +24,10 @@ def web_search_tool(query: str) -> str:
         else:
             # Fallback to free DuckDuckGo search using direct library with retry logic
             with DDGS() as ddgs:
-                for backend in ["html", "lite", "api"]:
+                for backend in ["api", "lite", "html"]:
                     try:
-                        results = list(ddgs.text(query, max_results=10, backend=backend))
+                        # Enforce 'us-en' region for English results
+                        results = list(ddgs.text(query, region="us-en", max_results=10, backend=backend))
                         if results:
                             # Filter for English-only results
                             english_results = []
@@ -34,7 +35,8 @@ def web_search_tool(query: str) -> str:
                                 try:
                                     # Check if title or body is in English
                                     text = r.get('title', '') + ' ' + r.get('body', '')
-                                    if detect(text) == 'en':
+                                    lang = detect(text)
+                                    if lang == 'en':
                                         english_results.append(r)
                                         if len(english_results) >= 3:
                                             break

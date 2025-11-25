@@ -57,8 +57,8 @@ class LLMClient:
             raise ValueError(f"Unknown provider: {provider}")
 
 class AnswerGenerator:
-    def __init__(self, provider: str = "opensource"):
-        self.llm_client = LLMClient(provider=provider, model_name="meta-llama/Meta-Llama-3-70B-Instruct") # Default to a strong open model
+    def __init__(self, provider: str = "gemini"):
+        self.llm_client = LLMClient(provider=provider, model_name="gemini-2.0-flash")
         self.llm = self.llm_client.llm
         
         self.prompt = ChatPromptTemplate.from_template("""

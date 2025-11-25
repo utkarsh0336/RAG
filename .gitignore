@@ -49,6 +49,9 @@ htmlcov/
 *.db
 *.sqlite3
 
+# Qdrant vector database
+qdrant_data/
+
 # Logs and Reports
 *.log
 logs/
